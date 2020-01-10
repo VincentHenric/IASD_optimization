@@ -9,6 +9,9 @@ import numpy as np
 from functools import partial
 
 class Regularization:
+    """
+    implementation of the regularization functions
+    """
 #    @staticmethod
 #    def get(kind, **kwargs):
 #        if kind=='lasso':
@@ -32,8 +35,8 @@ class Regularization:
             return Regularization.norm2
         elif kind=='elasticnet':
             return Regularization.elasticnet
-        elif kind=='group_norm2':
-            return Regularization.group_norm2
+        elif kind=='group_lasso':
+            return Regularization.grouplasso
     
     @staticmethod
     def lasso(x, lbda):
@@ -52,13 +55,16 @@ class Regularization:
         return Regularization.lasso(x, lbda) + Regularization.ridge(x, lbda * gamma)
     
     @staticmethod
-    def groupnorm2(x, lbda, groups):
+    def grouplasso(x, lbda, groups):
         y = 0
         for group in groups:
             y += Regularization.norm2(x[group], lbda)
         return y
     
 class Proximal_func:
+    """
+    implementation of the proximal functions for the different regularizations
+    """
 #    @staticmethod
 #    def get(kind, **kwargs):
 #        if kind=='lasso':
@@ -82,8 +88,8 @@ class Proximal_func:
             return Proximal_func.norm2
         elif kind=='elasticnet':
             return Proximal_func.elasticnet
-        elif kind=='group_norm2':
-            return Proximal_func.group_norm2
+        elif kind=='group_lasso':
+            return Proximal_func.grouplasso
     
     @staticmethod
     def lasso(x, lbda):
@@ -95,7 +101,9 @@ class Proximal_func:
     
     @staticmethod
     def norm2(x, lbda):
-        return np.maximum(1-lbda/np.linalg.norm(x), np.zeros(x.shape))*x
+        if np.linalg.norm(x) < 1e-8:
+            return x
+        return np.maximum(1-lbda/(np.linalg.norm(x)), 0)*x
     
     @staticmethod
     def elasticnet(x, lbda, gamma):
@@ -103,7 +111,8 @@ class Proximal_func:
         return 1/(1+lbda*gamma)*Proximal_func.lasso(x,lbda)
     
     @staticmethod
-    def group_norm2(x, lbda, groups):
+    def grouplasso(x, lbda, groups):
         y = np.zeros(x.shape)
         for group in groups:
             y[group]=Proximal_func.norm2(x[group],lbda)
+        return y
